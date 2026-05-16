@@ -146,7 +146,18 @@ export default function WidgetView({ weather, location, settings, onRefresh }: W
         </div>
         <div className="h-10 w-full flex items-center gap-1.5 px-0.5">
           {hourlyIndices.map((item) => {
-            const hInfo = getWeatherInfo(weather.hourly.weatherCode[item.index], weather.current.isDay);
+            const itemTime = item.time;
+            const dateStr = format(itemTime, 'yyyy-MM-dd');
+            const dayIdx = weather.daily.time.indexOf(dateStr);
+            let hIsDay = true;
+            
+            if (dayIdx !== -1) {
+              const sunrise = parseISO(weather.daily.sunrise[dayIdx].includes('Z') ? weather.daily.sunrise[dayIdx] : `${weather.daily.sunrise[dayIdx]}:00Z`);
+              const sunset = parseISO(weather.daily.sunset[dayIdx].includes('Z') ? weather.daily.sunset[dayIdx] : `${weather.daily.sunset[dayIdx]}:00Z`);
+              hIsDay = itemTime >= sunrise && itemTime < sunset;
+            }
+
+            const hInfo = getWeatherInfo(weather.hourly.weatherCode[item.index], hIsDay);
             
             // Map weather codes to specific "condition colors" for the graph
             const getConditionColor = (code: number) => {

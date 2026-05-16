@@ -32,12 +32,28 @@ export function HourlyForecast({ weather, settings }: ForecastProps) {
   const cityNow = new Date(baseCityTime.getTime() + elapsedMs);
 
   const hourlyData = (weather?.hourly?.time || [])
-    .map((time, i) => ({
-      time: parseISO(time.includes('Z') ? time : `${time}:00Z`),
-      temp: weather.hourly.temperature?.[i] ?? 0,
-      code: weather.hourly.weatherCode?.[i] ?? 0,
-      pop: weather.hourly.precipitationProbability?.[i] ?? 0,
-    }))
+    .map((time, i) => {
+      const itemTime = parseISO(time.includes('Z') ? time : `${time}:00Z`);
+      
+      // Determine if it's day or night for this specific hour
+      const dateStr = format(itemTime, 'yyyy-MM-dd');
+      const dayIdx = weather.daily.time.indexOf(dateStr);
+      let isDay = true;
+      
+      if (dayIdx !== -1) {
+        const sunrise = parseISO(weather.daily.sunrise[dayIdx].includes('Z') ? weather.daily.sunrise[dayIdx] : `${weather.daily.sunrise[dayIdx]}:00Z`);
+        const sunset = parseISO(weather.daily.sunset[dayIdx].includes('Z') ? weather.daily.sunset[dayIdx] : `${weather.daily.sunset[dayIdx]}:00Z`);
+        isDay = itemTime >= sunrise && itemTime < sunset;
+      }
+
+      return {
+        time: itemTime,
+        temp: weather.hourly.temperature?.[i] ?? 0,
+        code: weather.hourly.weatherCode?.[i] ?? 0,
+        pop: weather.hourly.precipitationProbability?.[i] ?? 0,
+        isDay
+      };
+    })
     .filter(item => {
       // Comparison works because both are parsed as UTC
       return item.time >= cityNow || (cityNow.getTime() - item.time.getTime() < 3600000 && item.time <= cityNow);
@@ -60,7 +76,7 @@ export function HourlyForecast({ weather, settings }: ForecastProps) {
         className="flex gap-3 overflow-x-auto no-scrollbar pb-4 px-6 snap-x snap-mandatory scroll-smooth will-change-transform"
       >
         {hourlyData.length > 0 ? hourlyData.map((item, i) => {
-          const info = getWeatherInfo(item.code);
+          const info = getWeatherInfo(item.code, item.isDay);
           const isNow = i === 0;
           
           return (
