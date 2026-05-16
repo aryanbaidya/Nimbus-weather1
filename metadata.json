@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Nimbus Weather",
+  "description": "A refined, iOS-minimalist weather application featuring glassmorphic design, global city search, and detailed hourly/daily forecasts.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}
