@@ -42,7 +42,7 @@ export default function SearchBar({ onSelect, onClose, hapticEnabled }: SearchBa
       } finally {
         setIsLoading(false);
       }
-    }, 500)
+    }, 300)
   ).current;
 
   useEffect(() => {

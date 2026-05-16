@@ -61,24 +61,24 @@ export default function WeatherDetails({ weather, settings }: WeatherDetailsProp
   };
 
   const currentIdx = getCurrentIndex();
-  const rainChance = weather.hourly.precipitationProbability[currentIdx] ?? 0;
+  const rainChance = weather.hourly.precipitationProbability?.[currentIdx] ?? 0;
 
   const details = [
     {
       label: 'Humidity',
-      value: Math.round(weather.current.relativeHumidity),
+      value: Math.round(weather.current.relativeHumidity || 0),
       unit: '%',
       icon: 'Droplets'
     },
     {
       label: 'Visibility',
-      value: convertVisibility(weather.current.visibility),
+      value: convertVisibility(weather.current.visibility || 0),
       unit: settings.unitVisibility === 'miles' ? 'mi' : 'km',
       icon: 'Eye'
     },
     {
       label: 'Precipitation',
-      value: convertPrecipitation(weather.daily.precipitationSum[0] || 0),
+      value: convertPrecipitation(weather?.daily?.precipitationSum?.[0] || 0),
       unit: settings.unitPrecipitation === 'inches' ? 'in' : 'mm',
       icon: 'CloudRain',
       desc: `Today • Chance: ${rainChance}%`,
@@ -86,10 +86,10 @@ export default function WeatherDetails({ weather, settings }: WeatherDetailsProp
     },
     {
       label: 'Wind Speed',
-      value: convertWindValue(weather.current.windSpeed),
+      value: convertWindValue(weather.current.windSpeed || 0),
       unit: getWindUnit(),
       icon: 'Wind',
-      desc: getWindDir(weather.current.windDirection),
+      desc: getWindDir(weather.current.windDirection || 0),
       isWind: true
     }
   ];

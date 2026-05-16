@@ -31,7 +31,7 @@ export function HourlyForecast({ weather, settings }: ForecastProps) {
   const elapsedMs = Date.now() - weather.fetchedAt;
   const cityNow = new Date(baseCityTime.getTime() + elapsedMs);
 
-  const hourlyData = weather.hourly.time
+  const hourlyData = (weather?.hourly?.time || [])
     .map((time, i) => ({
       time: parseISO(time.includes('Z') ? time : `${time}:00Z`),
       temp: weather.hourly.temperature?.[i] ?? 0,
@@ -130,8 +130,8 @@ export function DailyForecast({ weather, settings }: ForecastProps) {
         <Icons.ChevronRight className="w-4 h-4 text-app-text-dim/50" />
       </div>
       <div className={cn("flex flex-col gap-1 p-2 gpu", "bg-app-surface backdrop-blur-2xl border border-app-border rounded-[32px]")}>
-        {weather.daily.time.map((time, i) => {
-          const info = getWeatherInfo(weather.daily.weatherCode[i]);
+        {(weather?.daily?.time || []).map((time, i) => {
+          const info = getWeatherInfo(weather.daily.weatherCode?.[i] ?? 0);
           const date = parseISO(time);
           
           return (
@@ -148,8 +148,8 @@ export function DailyForecast({ weather, settings }: ForecastProps) {
                 <span className="text-[13px] text-app-text-dim hidden sm:inline-block truncate max-w-[100px]">{info.label}</span>
               </div>
               <div className="flex items-center gap-4 w-24 justify-end">
-                <span className="text-[15px] font-semibold text-app-text">{convert(weather.daily.temperatureMax[i])}°</span>
-                <span className="text-[15px] font-medium text-app-text-dim">{convert(weather.daily.temperatureMin[i])}°</span>
+                <span className="text-[15px] font-semibold text-app-text">{convert(weather.daily.temperatureMax?.[i] ?? 0)}°</span>
+                <span className="text-[15px] font-medium text-app-text-dim">{convert(weather.daily.temperatureMin?.[i] ?? 0)}°</span>
               </div>
             </div>
           );

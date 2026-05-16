@@ -192,30 +192,36 @@ export default function App() {
   };
 
   const addLocation = (location: Location) => {
-    let newIndex = -1;
-    setState(prev => {
-      const exists = prev.locations.find(l => 
-        (l.latitude === location.latitude && l.longitude === location.longitude) || 
-        (l.id !== 0 && l.id === location.id)
-      );
-      if (exists) {
-        newIndex = prev.locations.indexOf(exists);
-        return { ...prev, activeLocationIndex: newIndex };
-      }
-      
-      const newLocations = [...prev.locations, location];
-      newIndex = newLocations.length - 1;
-      return {
-        ...prev,
-        locations: newLocations,
-        activeLocationIndex: newIndex
-      };
-    });
+    // 1. Check if location already exists upfront to avoid async state issues
+    const existsIndex = state.locations.findIndex(l => 
+      (l.latitude === location.latitude && l.longitude === location.longitude) || 
+      (l.id !== 0 && l.id === location.id)
+    );
 
-    // Side effect triggers outside of setState
-    if (newIndex !== -1) {
-      loadWeather(location, newIndex);
+    if (existsIndex !== -1) {
+      setState(prev => ({ 
+        ...prev, 
+        activeLocationIndex: existsIndex, 
+        showSettings: false 
+      }));
+      return;
     }
+
+    // 2. Prepare new list and index
+    const newIndex = state.locations.length;
+    const newLocations = [...state.locations, location];
+
+    // 3. Update state with immediate loading for the new index
+    setState(prev => ({
+      ...prev,
+      locations: newLocations,
+      activeLocationIndex: newIndex,
+      loading: true,
+      error: null
+    }));
+
+    // 4. Trigger weather fetch for the new city
+    loadWeather(location, newIndex);
   };
 
   const removeLocation = (index: number) => {

@@ -64,25 +64,25 @@ export async function searchLocations(query: string): Promise<Location[]> {
   if (query.length < 2) return [];
   
   try {
-    const response = await fetchWithTimeout(`${GEO_API_URL}?name=${encodeURIComponent(query)}&count=10&language=en&format=json`, {}, 15000, 2);
+    // Shorter timeout and no retries for search to keep it snappy
+    const response = await fetchWithTimeout(`${GEO_API_URL}?name=${encodeURIComponent(query)}&count=10&language=en&format=json`, {}, 5000, 0);
     
     if (!response.ok) {
-       // Silent fail for search as it might be too spammy if we throw every time typing
        return [];
     }
 
     const data = await response.json();
     
-    if (!data.results) return [];
+    if (!data || !data.results) return [];
     
     return data.results.map((item: any) => ({
-      id: item.id,
-      name: item.name,
+      id: item.id || Math.random(),
+      name: item.name || 'Unknown',
       latitude: item.latitude,
       longitude: item.longitude,
-      country: item.country,
+      country: item.country || '',
       admin1: item.admin1,
-      timezone: item.timezone,
+      timezone: item.timezone || 'UTC',
     }));
   } catch (err) {
     console.warn('Location search failed:', err);
