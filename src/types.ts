@@ -63,7 +63,7 @@ export interface Settings {
   unitVisibility: 'km' | 'miles';
   unitPrecipitation: 'mm' | 'inches';
   iconStyle: 'outline' | 'coloured';
-  theme: 'white' | 'ivory' | 'dark' | 'black';
+  theme: 'black';
   hapticEnabled: boolean;
   notificationTime: string; // HH:mm
   rainThreshold: number; // probability percentage

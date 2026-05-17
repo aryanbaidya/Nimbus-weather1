@@ -136,7 +136,7 @@ export function DailyForecast({ weather, settings }: ForecastProps) {
         <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-app-text-dim">7-Day Forecast</span>
         <Icons.ChevronRight className="w-4 h-4 text-app-text-dim/50" />
       </div>
-      <div className={cn("flex flex-col gap-1 p-2 gpu will-change-transform", "bg-app-surface backdrop-blur-xl border border-app-border rounded-[32px]")}>
+      <div className={cn("flex flex-col gap-1 p-2 gpu", "bg-app-surface backdrop-blur-2xl border border-app-border rounded-[32px]")}>
         {(weather?.daily?.time || []).map((time, i) => {
           const info = getWeatherInfo(weather.daily.weatherCode?.[i] ?? 0);
           const date = parseISO(time);

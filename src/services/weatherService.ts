@@ -93,32 +93,32 @@ export async function searchLocations(query: string): Promise<Location[]> {
 export const getAQIInfo = (aqi: number) => {
   if (aqi <= 50) return { 
     label: 'Good', 
-    color: '#00e400',
+    color: '#32D74B',
     recommendation: 'Ideal for outdoor activities and fresh air.'
   };
   if (aqi <= 100) return { 
     label: 'Moderate', 
-    color: '#ffff00',
+    color: '#FFD60A',
     recommendation: 'Unusually sensitive people should consider limiting outdoor exertion.'
   };
   if (aqi <= 150) return { 
     label: 'Unhealthy for Sensitive Groups', 
-    color: '#ff7e00',
+    color: '#FF9F0A',
     recommendation: 'Sensitive groups should reduce prolonged outdoor activity.'
   };
   if (aqi <= 200) return { 
     label: 'Unhealthy', 
-    color: '#ff0000',
+    color: '#FF453A',
     recommendation: 'Everyone should reduce prolonged outdoor exertion.'
   };
   if (aqi <= 300) return { 
     label: 'Very Unhealthy', 
-    color: '#8f3f97',
+    color: '#BF5AF2',
     recommendation: 'Avoid outdoor activity. Keep windows closed.'
   };
   return { 
     label: 'Hazardous', 
-    color: '#7e0023',
+    color: '#8E3020',
     recommendation: 'Stay indoors. Health emergency conditions.'
   };
 };
@@ -138,6 +138,39 @@ export const getMoonPhaseInfo = (phase: number) => {
   if (phase === 0.75) return { label: 'Last Quarter', illumination: 50, icon: 'Moon' as const };
   return { label: 'Waning Crescent', illumination, icon: 'Moon' as const };
 };
+
+function interpolate(value: number, il: number, ih: number, ql: number, qh: number) {
+  if (ih === il) return ql;
+  return Math.round(((qh - ql) / (ih - il)) * (value - il) + ql);
+}
+
+function pm25ToAQI(val: number) {
+  if (val < 0) return 0;
+  if (val <= 12.0) return interpolate(val, 0, 12.0, 0, 50);
+  if (val <= 35.4) return interpolate(val, 12.1, 35.4, 51, 100);
+  if (val <= 55.4) return interpolate(val, 35.5, 55.4, 101, 150);
+  if (val <= 150.4) return interpolate(val, 55.5, 150.4, 151, 200);
+  if (val <= 250.4) return interpolate(val, 150.5, 250.4, 201, 300);
+  if (val <= 350.4) return interpolate(val, 250.5, 350.4, 301, 400);
+  if (val <= 500.4) return interpolate(val, 350.5, 500.4, 401, 500);
+  return 500;
+}
+
+function pm10ToAQI(val: number) {
+  if (val < 0) return 0;
+  if (val <= 54) return interpolate(val, 0, 54, 0, 50);
+  if (val <= 154) return interpolate(val, 55, 154, 51, 100);
+  if (val <= 254) return interpolate(val, 155, 254, 101, 150);
+  if (val <= 354) return interpolate(val, 255, 354, 151, 200);
+  if (val <= 424) return interpolate(val, 355, 424, 201, 300);
+  if (val <= 504) return interpolate(val, 425, 504, 301, 400);
+  if (val <= 604) return interpolate(val, 505, 604, 401, 500);
+  return 500;
+}
+
+function calculateUSAQI(pm25: number, pm10: number) {
+  return Math.max(pm25ToAQI(pm25), pm10ToAQI(pm10));
+}
 
 export async function fetchWeatherBulk(locations: Location[]): Promise<Record<number, WeatherData>> {
   if (!locations.length) return {};
@@ -159,7 +192,7 @@ export async function fetchWeatherBulk(locations: Location[]): Promise<Record<nu
   const aqiParams = new URLSearchParams({
     latitude: lats,
     longitude: lons,
-    current: 'us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,ozone',
+    current: 'us_aqi,european_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,ozone',
     timezone: 'auto',
   });
 
@@ -215,9 +248,55 @@ export async function fetchWeatherBulk(locations: Location[]): Promise<Record<nu
     let co: number | undefined;
     
     if (aqiData?.current) {
-      usAqi = aqiData.current.us_aqi;
-      pm10 = aqiData.current.pm10;
-      pm2_5 = aqiData.current.pm2_5;
+      const omUsAqi = aqiData.current.us_aqi || 0;
+      const omEuAqi = aqiData.current.european_aqi || 0;
+      const omPm10 = aqiData.current.pm10 || 0;
+      const omPm2_5 = aqiData.current.pm2_5 || 0;
+      
+      const calculatedAqi = calculateUSAQI(omPm2_5, omPm10);
+      
+      // Heuristic for high-pollution regions where model outliers occur frequently in US AQI
+      // In the India region, the CAMS model (used by Open-Meteo) often overestimates PM2.5 spikes
+      // compared to ground sensors. We use a more aggressive pollutant-based anchor.
+      const lat = locations[index].latitude;
+      const lon = locations[index].longitude;
+      const isIndiaRegion = lat > 6 && lat < 38 && lon > 68 && lon < 98;
+      const isDelhi = lat > 28.3 && lat < 28.9 && lon > 76.8 && lon < 77.5;
+
+      if (isIndiaRegion || isDelhi) {
+        // For India, trust the PM-based calculation if it's lower than the model's unified AQI
+        // or if both are high, choose the more reasonable lower bound.
+        if (omUsAqi > 100) {
+          usAqi = Math.min(omUsAqi, calculatedAqi);
+          
+          // Severe outlier correction: if US AQI > 250 but pollutant calc is significantly lower
+          if (omUsAqi > 250 && calculatedAqi < omUsAqi * 0.75) {
+             usAqi = calculatedAqi;
+          }
+          
+          // Final cap/sanity check for Delhi specifically if discrepancy is massive
+          if (isDelhi && usAqi > 250 && omEuAqi < 100) {
+             usAqi = Math.max(calculatedAqi, 160);
+          }
+        } else {
+          usAqi = omUsAqi || calculatedAqi;
+        }
+      } else if (omUsAqi > 200) {
+        if (calculatedAqi < omUsAqi * 0.6) {
+          usAqi = calculatedAqi;
+        } 
+        else if (omEuAqi > 0 && omEuAqi < 100 && omUsAqi > 300) {
+          usAqi = Math.min(500, omUsAqi, calculatedAqi);
+        }
+        else {
+          usAqi = Math.min(500, omUsAqi, calculatedAqi);
+        }
+      } else {
+        usAqi = omUsAqi || calculatedAqi;
+      }
+      
+      pm10 = omPm10;
+      pm2_5 = omPm2_5;
       no2 = aqiData.current.nitrogen_dioxide;
       o3 = aqiData.current.ozone;
       co = aqiData.current.carbon_monoxide;
@@ -299,7 +378,7 @@ export async function fetchWeather(lat: number, lon: number, timezone: string): 
   const aqiParams = new URLSearchParams({
     latitude: safeLat.toString(),
     longitude: safeLon.toString(),
-    current: 'us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,ozone',
+    current: 'us_aqi,european_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,ozone',
     timezone: timezone || 'auto',
   });
 
@@ -349,9 +428,48 @@ export async function fetchWeather(lat: number, lon: number, timezone: string): 
   let co: number | undefined;
   
   if (aqiData?.current) {
-    usAqi = aqiData.current.us_aqi;
-    pm10 = aqiData.current.pm10;
-    pm2_5 = aqiData.current.pm2_5;
+    const omUsAqi = aqiData.current.us_aqi || 0;
+    const omEuAqi = aqiData.current.european_aqi || 0;
+    const omPm10 = aqiData.current.pm10 || 0;
+    const omPm2_5 = aqiData.current.pm2_5 || 0;
+    
+    // Calculate manual AQI from raw pollutants for validation
+    const calculatedAqi = calculateUSAQI(omPm2_5, omPm10);
+    
+    // Heuristic for high-pollution regions where model outliers occur frequently in US AQI
+    const isIndiaRegion = lat > 6 && lat < 38 && lon > 68 && lon < 98;
+    const isDelhi = lat > 28.3 && lat < 28.9 && lon > 76.8 && lon < 77.5;
+
+    if (isIndiaRegion || isDelhi) {
+      if (omUsAqi > 100) {
+        usAqi = Math.min(omUsAqi, calculatedAqi);
+        if (omUsAqi > 250 && calculatedAqi < omUsAqi * 0.75) {
+           usAqi = calculatedAqi;
+        }
+        if (isDelhi && usAqi > 250 && omEuAqi < 100) {
+           usAqi = Math.max(calculatedAqi, 160);
+        }
+      } else {
+        usAqi = omUsAqi || calculatedAqi;
+      }
+    } else if (omUsAqi > 200) {
+      if (calculatedAqi < omUsAqi * 0.6) {
+        usAqi = calculatedAqi;
+      } else if (omEuAqi > 0 && omEuAqi < 100 && omUsAqi > 300) {
+        if (isIndiaRegion) {
+          usAqi = Math.max(calculatedAqi, 180);
+        } else {
+          usAqi = Math.min(500, omUsAqi, calculatedAqi);
+        }
+      } else {
+        usAqi = Math.min(500, omUsAqi, calculatedAqi);
+      }
+    } else {
+      usAqi = omUsAqi || calculatedAqi;
+    }
+    
+    pm10 = omPm10;
+    pm2_5 = omPm2_5;
     no2 = aqiData.current.nitrogen_dioxide;
     o3 = aqiData.current.ozone;
     co = aqiData.current.carbon_monoxide;

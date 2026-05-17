@@ -1,8 +1,10 @@
 {
-  "name": "Remix: Nimbus Weather",
-  "description": "A refined, iOS-minimalist weather application featuring glassmorphic design, global city search, and detailed hourly/daily forecasts.",
+  "name": "Nimbus Black: Ultra-Minimal Weather",
+  "description": "An ultra-minimalist, AMOLED-black weather experience focused on high-precision data visuals and pure typography.",
   "requestFramePermissions": [
     "geolocation"
   ],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

@@ -45,7 +45,7 @@ export default function WeatherHero({ weather, location, settings, onRefresh, is
   };
 
   return (
-    <div className="flex flex-col items-center text-center py-6 gpu will-change-transform">
+    <div className="flex flex-col items-center text-center py-6">
       {/* Status Bar - Moon Phase & Last Updated */}
       <div className="flex items-center gap-2 mb-4">
         <motion.div 

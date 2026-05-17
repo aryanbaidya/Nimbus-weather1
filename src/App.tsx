@@ -12,7 +12,7 @@ import { HourlyForecast, DailyForecast } from './components/Forecasts';
 import WeatherDetails from './components/WeatherDetails';
 import SunPath from './components/SunPath';
 import { Icons } from './components/WeatherIcons';
-import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useScroll, useMotionValueEvent } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'motion/react';
 import { cn } from './lib/utils';
 import SettingsScreen from './components/SettingsScreen';
 import CityManager from './components/CityManager';
@@ -60,8 +60,8 @@ export default function App() {
       const s = localStorage.getItem('app_settings');
       if (s) {
         const parsed = JSON.parse(s);
-        // Migration: Ensure theme exists
-        if (!parsed.theme) parsed.theme = 'black';
+        // Migration: Ensure theme is black
+        parsed.theme = 'black';
         if (!parsed.unitPrecipitation) parsed.unitPrecipitation = 'mm';
         if (parsed.iconStyle === '3d') parsed.iconStyle = 'outline';
         cachedSettings = parsed;
@@ -214,20 +214,15 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showCityManager, setShowCityManager] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
   
-  const { scrollY } = useScroll();
-  
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const next = latest < 40;
-    if (headerVisible !== next) {
-      setHeaderVisible(next);
-    }
-  });
+  const mainRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', state.settings.theme);
@@ -622,13 +617,28 @@ export default function App() {
     const cleanup = initGestures();
 
     const onSwipeLeft = () => {
-      if (state.showSettings || showSearch || showCityManager) return;
+      if (state.showSettings || showSearch || showCityManager) {
+        setIsSwiping(false);
+        return;
+      }
       handleSwipe('left');
     };
 
     const onSwipeRight = () => {
-      if (state.showSettings || showSearch || showCityManager) return;
+      if (state.showSettings || showSearch || showCityManager) {
+        setIsSwiping(false);
+        return;
+      }
       handleSwipe('right');
+    };
+
+    const onSwipeStart = () => {
+      if (state.showSettings || showSearch || showCityManager) return;
+      setIsSwiping(true);
+    };
+
+    const onSwipeCancel = () => {
+      setIsSwiping(false);
     };
 
     const onPullRefresh = () => {
@@ -637,12 +647,16 @@ export default function App() {
 
     window.addEventListener('swipe-left', onSwipeLeft);
     window.addEventListener('swipe-right', onSwipeRight);
+    window.addEventListener('swipe-start', onSwipeStart);
+    window.addEventListener('swipe-cancel', onSwipeCancel);
     window.addEventListener('pull-refresh', onPullRefresh);
 
     return () => {
       cleanup();
       window.removeEventListener('swipe-left', onSwipeLeft);
       window.removeEventListener('swipe-right', onSwipeRight);
+      window.removeEventListener('swipe-start', onSwipeStart);
+      window.removeEventListener('swipe-cancel', onSwipeCancel);
       window.removeEventListener('pull-refresh', onPullRefresh);
     };
   }, [state.locations.length, state.activeLocationIndex]);
@@ -659,6 +673,7 @@ export default function App() {
         initial={{ opacity: 0, x: slideDirection ? xOffset : 0 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -xOffset }}
+        onAnimationComplete={() => setIsSwiping(false)}
         transition={{ 
           type: "spring",
           damping: 30,
@@ -712,6 +727,23 @@ export default function App() {
     );
   }, [activeWeather, activeLocation, state.settings, isRefreshing]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Only show header at the very top as requested
+      if (currentScrollY < 40) {
+        setHeaderVisible(true);
+      } else {
+        setHeaderVisible(false);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-app-bg text-app-text font-sans selection:bg-app-text/20 transition-colors duration-500">
       <AtmosphereFX 
@@ -721,26 +753,24 @@ export default function App() {
         locationName={activeLocation?.name ?? ''}
       />
 
-      {/* LAYER 1: UI OVERLAY - Permanently Fixed */}
-      <div id="ui-overlay" className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] h-24 pointer-events-none">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] h-24 z-[100] pointer-events-none">
         <motion.div 
           className="w-full h-full relative"
           initial={false}
           animate={{
-            y: headerVisible ? 0 : -100,
-            opacity: headerVisible ? 1 : 0,
+            y: (headerVisible && !isSwiping) ? 0 : -100,
+            opacity: (headerVisible && !isSwiping) ? 1 : 0,
           }}
-          transition={{ type: 'spring', stiffness: 400, damping: 40, mass: 1 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
         >
           {/* Add City Button - Top Left */}
-          <div className="absolute left-6 top-8 pointer-events-auto">
+          <motion.div className="absolute left-6 top-6 pointer-events-auto">
             <motion.button 
-              id="add-city-btn"
               onClick={() => {
                 Haptic.light(state.settings.hapticEnabled);
                 setShowCityManager(true);
               }}
-              className="w-11 h-11 bg-white/10 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-app-text active:scale-95 transition-all shadow-lg"
+              className="w-12 h-12 bg-app-text/5 border border-app-border rounded-full flex items-center justify-center text-app-text active:scale-95 transition-all shadow-xl"
               initial={false}
               animate={{
                 opacity: state.showSettings || showCityManager ? 0 : 1,
@@ -748,16 +778,15 @@ export default function App() {
                 scale: state.showSettings || showCityManager ? 0.8 : 1,
               }}
             >
-              <Icons.LayoutGrid className="w-5 h-5 text-app-text" strokeWidth={1.5} />
+              <Icons.LayoutGrid className="w-5 h-5 text-app-text-dim" strokeWidth={1.5} />
             </motion.button>
-          </div>
+          </motion.div>
 
           {/* Settings Button - Top Right */}
-          <div className="absolute right-6 top-8 pointer-events-auto">
+          <motion.div className="absolute right-6 top-6 pointer-events-auto">
             <motion.button 
-              id="settings-btn"
               onClick={toggleSettings}
-              className="group active:scale-95 transition-all w-11 h-11 flex items-center justify-center min-w-[44px]"
+              className="group active:scale-95 transition-all w-12 h-12 flex items-center justify-center"
             >
               <AnimatePresence mode="wait">
                 {state.showSettings ? (
@@ -768,8 +797,8 @@ export default function App() {
                     exit={{ opacity: 0, x: 10 }}
                     className="flex items-center text-app-text pr-2"
                   >
-                    <Icons.ChevronLeft className="w-5 h-5 mr-0.5" strokeWidth={2.5} />
-                    <span className="text-[16px] font-medium text-app-text">Back</span>
+                    <Icons.ChevronLeft className="w-6 h-6 mr-0.5" strokeWidth={2.5} />
+                    <span className="text-[17px] font-medium text-app-text">Back</span>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -777,17 +806,17 @@ export default function App() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="w-11 h-11 bg-white/10 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-app-text group-hover:text-app-text transition-colors shadow-lg"
+                    className="w-12 h-12 bg-app-text/5 border border-app-border rounded-full flex items-center justify-center text-app-text-dim group-hover:text-app-text transition-colors shadow-xl"
                   >
                     <Icons.Settings2 className="w-5 h-5" />
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.button>
-          </div>
+          </motion.div>
 
           {/* City Name & Pagination - Center */}
-          <div id="city-dots" className="absolute left-1/2 -translate-x-1/2 top-9 flex flex-col items-center pointer-events-none">
+          <div className="absolute left-1/2 -translate-x-1/2 top-6 flex flex-col items-center pointer-events-none mt-2">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={activeLocation?.id || activeLocation?.name || 'loading'}
@@ -799,22 +828,20 @@ export default function App() {
                 exit={{ opacity: 0, y: 10 }}
                 className="flex flex-col items-center"
               >
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[17px] font-semibold text-app-text leading-tight">{activeLocation?.name || 'Loading...'}</span>
-                  
-                  {isOffline && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full"
-                    >
-                      <Icons.CloudOff className="w-2.5 h-2.5 text-amber-500" />
-                      <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">Offline</span>
-                    </motion.div>
-                  )}
-                </div>
+                <span className="text-[17px] font-semibold text-app-text">{activeLocation?.name || 'Loading...'}</span>
+                
+                {isOffline && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full mt-1"
+                  >
+                    <Icons.CloudOff className="w-2.5 h-2.5 text-amber-500" />
+                    <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest">Offline</span>
+                  </motion.div>
+                )}
 
-                <div className="flex gap-1.5 mt-2">
+                <div className="flex gap-1.5 mt-1.5">
                   {state.locations.map((_, i) => (
                     <button 
                       key={i} 
@@ -896,8 +923,7 @@ export default function App() {
       </AnimatePresence>
 
       <main 
-        id="swipe-layer"
-        className="max-w-[390px] mx-auto px-6 pt-24 pb-32 min-h-screen relative touch-pan-y gpu will-change-transform"
+        className="max-w-[390px] mx-auto px-6 pt-24 pb-32 min-h-screen relative touch-pan-y"
       >
         {/* Pull to refresh logic handled by gestures.ts */}
         

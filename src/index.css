@@ -19,33 +19,6 @@
   color-scheme: dark;
 }
 
-[data-theme="white"] {
-  --bg-primary: #ffffff;
-  --text-primary: #1a1a1a;
-  --text-secondary: rgba(26, 26, 26, 0.5);
-  --border-color: rgba(0, 0, 0, 0.08);
-  --surface-color: rgba(0, 0, 0, 0.04);
-  color-scheme: light;
-}
-
-[data-theme="ivory"] {
-  --bg-primary: #f4f1ea;
-  --text-primary: #1a1a1a;
-  --text-secondary: rgba(26, 26, 26, 0.6);
-  --border-color: rgba(26, 26, 26, 0.1);
-  --surface-color: rgba(26, 26, 26, 0.05);
-  color-scheme: light;
-}
-
-[data-theme="dark"] {
-  --bg-primary: #1a1a1b;
-  --text-primary: #eaecf0;
-  --text-secondary: rgba(234, 236, 240, 0.5);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --surface-color: rgba(255, 255, 255, 0.06);
-  color-scheme: dark;
-}
-
 [data-theme="black"] {
   --bg-primary: #000000;
   --text-primary: #ffffff;
@@ -76,6 +49,14 @@ input, textarea, [contenteditable="true"] {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Replace all CSS transitions over 300ms — reduce to 150ms */
+* {
+  transition-duration: 150ms !important;
+  transition-timing-function: ease-out !important;
 }
 
 /* Smooth scrolling and prevent bounce */
@@ -162,12 +143,7 @@ input[type=range]::-webkit-slider-thumb {
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-[data-theme="white"] input[type=range]::-webkit-slider-thumb,
-[data-theme="ivory"] input[type=range]::-webkit-slider-thumb {
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
+/* Track styling already handled */
 
 /* Clear default tracks to avoid double-line effect */
 input[type=range]::-webkit-slider-runnable-track {
@@ -179,26 +155,5 @@ input[type=range]::-webkit-slider-runnable-track {
 
 input[type=range]:active::-webkit-slider-thumb {
   transform: scale(1.15);
-}
-
-/* UI OVERLAY - Elements that NEVER move during swiping */
-#ui-overlay {
-  z-index: 2000;
-  pointer-events: none;
-  will-change: transform;
-}
-
-#ui-overlay button, 
-#ui-overlay a {
-  pointer-events: auto;
-}
-
-/* SWIPE LAYER - The container that handles the visual slide */
-#swipe-layer {
-  /* No default transform here, let React/JS handle it */
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
 }
 

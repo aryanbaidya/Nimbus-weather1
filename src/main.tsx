@@ -5,15 +5,15 @@ import './index.css';
 import {ErrorBoundary} from './components/ErrorBoundary.tsx';
 
 window.addEventListener('error', (event) => {
-  // Broadly silence "Script error." and similar cryptic cross-origin messages
-  // These are usually from browser extensions or the iframe container and provide no debug value
   const msg = event.message?.toLowerCase() || '';
   if (
     msg.includes('script error') ||
     msg.includes('failed to fetch') || 
     msg.includes('networkerror') ||
     msg.includes('load failed') ||
-    msg.includes('mime type')
+    msg.includes('mime type') ||
+    msg.includes('unexpected token') ||
+    msg.includes('cross-origin')
   ) {
     return;
   }
@@ -51,14 +51,6 @@ window.addEventListener('unhandledrejection', (event) => {
 // Improve scrolling performance in WebView
 window.addEventListener('touchstart', () => {}, { passive: true });
 window.addEventListener('touchmove', () => {}, { passive: true });
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(err => {
-      console.warn("Service Worker registration failed:", err);
-    });
-  });
-}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

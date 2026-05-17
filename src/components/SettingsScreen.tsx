@@ -496,46 +496,9 @@ const SettingsScreen = ({ settings: globalSettings, onUpdate, onClose, activeWea
             ]}
             onChange={(val) => updateSetting('unitVisibility', val)}
           />
-          <SelectRow 
-            label="Precipitation" 
-            value={localSettings.unitPrecipitation} 
-            hapticEnabled={localSettings.hapticEnabled}
-            options={[
-              { label: 'mm', value: 'mm' },
-              { label: 'in', value: 'inches' }
-            ]}
-            onChange={(val) => updateSetting('unitPrecipitation', val)}
-          />
         </Section>
 
-        <Section title="Appearance">
-          <div className="p-6">
-            <p className="text-[14px] font-medium text-white/40 mb-4 px-1">Theme</p>
-            <div className="flex items-center gap-4 px-1 mb-2">
-              {[
-                { id: 'white', label: 'White', bg: '#ffffff', text: '#000000' },
-                { id: 'ivory', label: 'Ivory', bg: '#f4f1ea', text: '#1a1a1a' },
-                { id: 'dark', label: 'Dark', bg: '#262626', text: '#ffffff' },
-                { id: 'black', label: 'Black', bg: '#000000', text: '#ffffff' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    Haptic.medium(localSettings.hapticEnabled);
-                    updateSetting('theme', t.id as any);
-                  }}
-                  className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 relative",
-                    localSettings.theme === t.id ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-black scale-110" : "opacity-60 hover:opacity-100"
-                  )}
-                  style={{ backgroundColor: t.bg }}
-                >
-                  <span className="text-[17px] font-medium" style={{ color: t.text }}>Aa</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <Section title="Icons">
           <div className="p-8 flex items-center justify-center gap-12 bg-white/[0.02] rounded-3xl">
             <button 
               type="button"

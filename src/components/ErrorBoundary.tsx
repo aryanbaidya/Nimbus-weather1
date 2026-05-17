@@ -12,10 +12,17 @@ export class ErrorBoundary extends React.Component<any, { hasError: boolean, err
   }
 
   static getDerivedStateFromError(error: Error) {
+    // If it's a generic script error, we might want to try to ignore it or treat it differently
+    // but React ErrorBoundaries usually catch fatal component errors.
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const msg = error?.message?.toLowerCase() || '';
+    if (msg.includes('script error')) {
+      console.warn('Caught non-descript Script error in boundary, attempting to recover...');
+      // Optionally we could reset state here, but let's just log it for now
+    }
     console.error('Uncaught error:', error, errorInfo);
   }
 

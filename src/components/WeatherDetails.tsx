@@ -66,7 +66,7 @@ export default function WeatherDetails({ weather, settings }: WeatherDetailsProp
   return (
     <div className="flex flex-col gap-6 px-0">
       {/* 1. Robust AQI Card (Full Width) */}
-      <div className="w-full bg-app-surface backdrop-blur-xl border border-app-border rounded-[32px] pt-5 pb-6 px-6 flex flex-col gap-5 overflow-hidden shadow-2xl relative gpu will-change-transform">
+      <div className="w-full bg-app-surface backdrop-blur-[32px] border border-app-border rounded-[32px] pt-5 pb-6 px-6 flex flex-col gap-5 overflow-hidden shadow-2xl relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-app-text/5 flex items-center justify-center">
@@ -103,14 +103,17 @@ export default function WeatherDetails({ weather, settings }: WeatherDetailsProp
             <div className="flex flex-col gap-2 mt-1">
               <div className="w-full h-[8px] rounded-full bg-app-text/5 relative overflow-hidden group">
                 {/* Visual Gradient Track based on defined categories */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#00e400] via-[#ffff00] via-[#ff7e00] via-[#ff0000] via-[#8f3f97] to-[#7e0023]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#32D74B] via-[#FFD60A] via-[#FF9F0A] via-[#FF453A] via-[#BF5AF2] to-[#8E3020]" />
                 
                 {/* Indicator Thumb */}
                 <motion.div 
                   className="absolute top-0 w-3 h-full bg-app-text shadow-[0_0_10px_rgba(255,255,255,0.8)] border border-black/10 z-10"
-                  style={{ borderRadius: '4px', left: 0 }}
-                  initial={{ x: 0 }}
-                  animate={{ x: `${Math.min(100, (aqi.usAqi / 500) * 100)}%` }}
+                  style={{ borderRadius: '4px' }}
+                  initial={{ left: '0%', x: '0%' }}
+                  animate={{ 
+                    left: `${Math.min(100, (aqi.usAqi / 500) * 100)}%`,
+                    x: `-${Math.min(100, (aqi.usAqi / 500) * 100)}%` 
+                  }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
                 />
               </div>
@@ -152,7 +155,7 @@ export default function WeatherDetails({ weather, settings }: WeatherDetailsProp
           <div 
             key={i} 
             className={cn(
-              "px-4 py-6 flex flex-col justify-between bg-app-surface backdrop-blur-xl border border-app-border rounded-[28px] h-[140px] shadow-lg transition-all duration-300 hover:bg-app-text/[0.05] gpu will-change-transform",
+              "px-4 py-6 flex flex-col justify-between bg-app-surface backdrop-blur-[32px] border border-app-border rounded-[28px] h-[140px] shadow-lg transition-all duration-300 hover:bg-app-text/[0.05]",
               ('isWind' in detail) && "py-5"
             )}
           >

@@ -63,22 +63,9 @@ export function initGestures() {
       const angle = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
       if (angle < 90 - LOCK_ANGLE || angle > 90 + LOCK_ANGLE) {
         axis = "h";
+        window.dispatchEvent(new CustomEvent("swipe-start"));
       } else {
         axis = "v";
-      }
-    }
-
-    // Interactive Swipe Handling
-    if (axis === "h") {
-      const swipeLayer = document.getElementById("swipe-layer");
-      if (swipeLayer) {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          // Add some resistance or just direct mapping
-          swipeLayer.style.transition = "none";
-          swipeLayer.style.transform = `translateX(${dx}px) translateZ(0)`;
-          rafId = null;
-        });
       }
     }
 
@@ -109,12 +96,6 @@ export function initGestures() {
     requestAnimationFrame(() => {
       indicator.style.transform = "translateY(-100%)";
       indicator.textContent  = "";
-      
-      const swipeLayer = document.getElementById("swipe-layer");
-      if (swipeLayer) {
-        swipeLayer.style.transition = "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)";
-        swipeLayer.style.transform = "translateX(0) translateZ(0)";
-      }
     });
 
     if (axis === "h") {
@@ -123,6 +104,8 @@ export function initGestures() {
         window.dispatchEvent(new CustomEvent("swipe-left"));
       } else if (dx > SWIPE_THRESHOLD) {
         window.dispatchEvent(new CustomEvent("swipe-right"));
+      } else {
+        window.dispatchEvent(new CustomEvent("swipe-cancel"));
       }
 
     } else if (axis === "v") {
