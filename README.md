@@ -1,6 +1,6 @@
 
 
-# Nimbus Black 
+# Nimbus Black ⛈️
 
 > A a beautiful and minimal designed weather app with amoled background.
 
