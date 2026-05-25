@@ -24,7 +24,7 @@ Nimbus weather is a clean, dark-themed weather PWA featuring real-time weather, 
 
 ## 🌐 Live Demo
 
-**[https://nimbus-weather-swart.vercel.app/](https://nimbus-weather-swart.vercel.app/)**
+**[https://https://nimbus-weather1.vercel.app//](https://nimbus-weather1.vercel.app//)**
 
 ---
 
@@ -33,7 +33,7 @@ Nimbus weather is a clean, dark-themed weather PWA featuring real-time weather, 
 | Tool | Purpose |
 |------|---------|
 | HTML / CSS / Vanilla JS | Core app — no frameworks |
-| Google AI Studio (Gemini 2.0) | AI-assisted development |
+| Gemini 2.0 | AI-assisted development |
 | Open-Meteo API | Weather + sunrise/sunset data |
 | WAQI API | Air quality (India NAQI) |
 | Chart.js | Forecast charts |
@@ -83,6 +83,10 @@ Just open index.html in any browser.
 1. Open the live URL in Chrome on Android
 2. Tap ⋮ → *Add to Home Screen*
 3. Works like a native app with haptic feedback
+
+OR
+
+to get a native apk, scroll down to RELEASE section and download the apk file.
 
 ---
 
