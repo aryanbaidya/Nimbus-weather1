@@ -150,13 +150,19 @@ export default function SunPath({ weather, settings }: SunPathProps) {
       cycleEndName = "Moonset";
     } else {
       // Fallback: Night is from Sunset to next Sunrise
-      activeStartMinutes = sunsetMinutes;
-      // If we are before midnight, next sunrise is tomorrow. If after, sunrise is later today.
-      const tomorrowSunrise = getMinutesFromISO(weather?.daily?.sunrise?.[1] || "");
-      activeEndMinutes = (tomorrowSunrise !== null) ? (tomorrowSunrise + 1440) : (sunriseMinutes + 1440);
-      
-      cycleLabelStart = formatTime(weather?.daily?.sunset?.[0] || "2026-05-19T18:00");
-      cycleLabelEnd = weather?.daily?.sunrise?.[1] ? formatTime(weather.daily.sunrise[1]) : formatTime(weather?.daily?.sunrise?.[0] || "2026-05-19T06:00");
+      if (nowMinutes >= sunsetMinutes) {
+        activeStartMinutes = sunsetMinutes;
+        const tomorrowSunrise = getMinutesFromISO(weather?.daily?.sunrise?.[1] || "");
+        activeEndMinutes = (tomorrowSunrise !== null) ? (tomorrowSunrise + 1440) : (sunriseMinutes + 1440);
+        cycleLabelStart = formatTime(weather?.daily?.sunset?.[0] || "2026-05-19T18:00");
+        cycleLabelEnd = weather?.daily?.sunrise?.[1] ? formatTime(weather.daily.sunrise[1]) : formatTime(weather?.daily?.sunrise?.[0] || "2026-05-19T06:00");
+      } else {
+        // After Midnight, before Sunrise
+        activeStartMinutes = sunsetMinutes - 1440;
+        activeEndMinutes = sunriseMinutes;
+        cycleLabelStart = formatTime(weather?.daily?.sunset?.[0] || "2026-05-19T18:00");
+        cycleLabelEnd = formatTime(weather?.daily?.sunrise?.[0] || "2026-05-19T06:00");
+      }
       cycleStartName = "Sunset";
       cycleEndName = "Sunrise";
     }
